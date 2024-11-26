@@ -6,26 +6,59 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
-// Create a bounding box (rectangle) with initial coordinates
-var bounds = L.latLngBounds([40.7122, -73.9632], [40.7377, -73.9302]);  // Example bounds
-var rectangle = L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(map);
-map.fitBounds(bounds);
+// Add Leaflet Draw controls
+var drawControl = new L.Control.Draw({
+    draw: {
+        polyline: false,
+        polygon: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+        rectangle: {
+            shapeOptions: {
+                color: '#ff7800',
+                weight: 2
+            }
+        }
+    },
+    edit: {
+        featureGroup: new L.FeatureGroup() // Empty layer group to store editable layers
+    }
+});
+map.addControl(drawControl);
 
-// Function to update the coordinates of the rectangle on the page
-function updateRectangleCoordinates() {
-    var sw = rectangle.getBounds().getSouthWest(); // Get southwest corner of the rectangle
-    var ne = rectangle.getBounds().getNorthEast(); // Get northeast corner of the rectangle
+// Create a feature group to store rectangles
+var drawnItems = new L.FeatureGroup().addTo(map);
 
-    // Update the displayed coordinates on the page
+// Function to update rectangle coordinates
+function updateRectangleCoordinates(layer) {
+    var sw = layer.getBounds().getSouthWest();
+    var ne = layer.getBounds().getNorthEast();
+
     document.getElementById('sw-coords').innerText = sw.lat.toFixed(4) + ", " + sw.lng.toFixed(4);
     document.getElementById('ne-coords').innerText = ne.lat.toFixed(4) + ", " + ne.lng.toFixed(4);
 }
 
-// Update the coordinates when the page is loaded
-updateRectangleCoordinates();
+// Listen for when a rectangle is created
+map.on('draw:created', function (e) {
+    var layer = e.layer;
 
-// Optional: Update the coordinates when the user interacts with the rectangle (e.g., dragging the box)
-rectangle.on('edit', updateRectangleCoordinates);
+    // Clear previously drawn items and add the new rectangle
+    drawnItems.clearLayers();
+    drawnItems.addLayer(layer);
 
-// Optional: Update the coordinates when the user interacts with the map
-map.on('mouseup', updateRectangleCoordinates);
+    // Update coordinates
+    updateRectangleCoordinates(layer);
+
+    // Add listeners for drag and resize
+    layer.on('edit', function () {
+        updateRectangleCoordinates(layer);
+    });
+});
+
+// Add edit capabilities to the rectangle
+map.on('draw:edited', function (e) {
+    e.layers.eachLayer(function (layer) {
+        updateRectangleCoordinates(layer);
+    });
+});
