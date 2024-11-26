@@ -31,7 +31,7 @@ def search_segments(lat_min, lon_min, lat_max, lon_max, access_token):
     search_url = f"{BASE_URL}/segments/explore"
     params = {
         'bounds': f"{lat_min},{lon_min},{lat_max},{lon_max}",
-        'activity_type': 'riding',  # Can also use 'running'
+        'activity_type': 'running',  # Can also use 'running', could modify later to allow
     }
     headers = {
         'Authorization': f"Bearer {access_token}"
