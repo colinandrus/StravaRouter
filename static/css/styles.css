@@ -19,6 +19,10 @@ body, html {
 #coordinates {
     margin-top: 10px;
 }
+#output {
+    display: block;  /* Ensure the span is displayed */
+    margin-top: 10px;  /* Add some spacing */
+}
 #returned-segments {
     display: block;  /* Ensure the span is displayed */
     margin-top: 10px;  /* Add some spacing */

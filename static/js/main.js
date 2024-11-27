@@ -2,7 +2,6 @@
 var map = L.map('map').setView([40.730610, -73.935242], 13); // Default center (New York City)
 
 // Add a tile layer
-// Add a grayscale tile layer
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
@@ -38,26 +37,50 @@ function updateCoordinates(sw, ne) {
 }
 
 // Function to send a POST request with the coordinates
-function sendPostRequest(data) {
-    return fetch('/update-segments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    }).then(response => response.json());
+async function sendPostRequest(data) {
+    try {
+        const response = await fetch('/update-segments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error during POST request:", error);
+        throw error;
+    }
 }
 
 // Function to handle the response from the server
-function handleResponse(result) {
+function handleResponse(segments) {
     try {
-        let segments = JSON.parse(result['returned-segments']);
-        document.getElementById('returned-segments').innerText = segments.length ? segments[0].name : "No segments found";
+        let segmentsContainer = document.getElementById('returned-segments');
+
+        // Clear any existing content in the container before appending new segments
+        segmentsContainer.innerHTML = "";
+
+        // Loop through each segment and create a paragraph for each
+        segments.forEach(segment => {
+            let segmentText = document.createElement('p');
+            segmentText.innerHTML = `<strong>${segment.name}</strong>: ${segment.distance} meters`;
+            segmentsContainer.appendChild(segmentText);
+        });
+
+        // If no segments are found, display a message
+        if (segments.length === 0) {
+            segmentsContainer.innerHTML = "No segments found.";
+        }
+
     } catch (error) {
-        console.error("Error parsing segments:", error);
+        console.error("Error handling response:", error);
     }
 }
 
 // Main function to update rectangle coordinates
-function updateRectangleCoordinates(layer) {
+async function updateRectangleCoordinates(layer) {
     var sw = layer.getBounds().getSouthWest();
     var ne = layer.getBounds().getNorthEast();
 
@@ -68,11 +91,13 @@ function updateRectangleCoordinates(layer) {
         northeast: { lat: ne.lat, lng: ne.lng }
     };
 
-    sendPostRequest(data)
-        .then(result => handleResponse(result))
-        .catch(error => console.error('Error:', error));
+    try {
+        const result = await sendPostRequest(data);
+        handleResponse(result);
+    } catch (error) {
+        console.error("Error during updateRectangleCoordinates:", error);
+    }
 }
-
 
 // Listen for when a rectangle is created
 map.on('draw:created', function (e) {
@@ -85,5 +110,3 @@ map.on('draw:created', function (e) {
     // Update coordinates
     updateRectangleCoordinates(layer);
 });
-
-

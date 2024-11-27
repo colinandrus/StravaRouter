@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="manifest" href="static/manifest.json">
+    <link rel="manifest" href="/static/manifest.json">
     <title>PWA Map Box Selector</title>
     
     <!-- Leaflet CSS -->
@@ -26,7 +26,8 @@
         <p><strong>Northeast:</strong> <span id="ne-coords">N/A</span></p>
     </div>
     <div id="output">
-        <p><strong>Segments Inside Box:</strong> <span id="returned-segments"></span></p>
+        <p><strong>Segments Inside Box:</strong></p>
+        <div id="returned-segments"></div> <!-- This is where segments will be displayed -->
     </div>
     
     <!-- Main JS file -->

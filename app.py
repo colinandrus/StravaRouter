@@ -29,7 +29,7 @@ def update_segments():
     # Search for segments
     segments = strava_api.search_segments(lat_min, lon_min, lat_max, lon_max, access_token)
     #return the segment results to page
-    return jsonify({'returned-segments': str(segments['segments'])})
+    return jsonify(segments['segments'])
 
 if __name__ == '__main__':
     app.run(debug=True)
