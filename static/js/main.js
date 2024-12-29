@@ -65,7 +65,7 @@ function handleResponse(segments) {
         // Loop through each segment and create a paragraph for each
         segments.forEach(segment => {
             let segmentText = document.createElement('p');
-            segmentText.innerHTML = `<strong>${segment.name}</strong>: ${segment.distance} meters`;
+            segmentText.innerHTML = `<strong>${segment.name}</strong>: ${segment.distance} meters ${segment.points}`;
             segmentsContainer.appendChild(segmentText);
         });
 

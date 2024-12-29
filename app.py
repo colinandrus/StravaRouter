@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import strava_api
+import polyline
 
 app = Flask(__name__)
 
@@ -28,8 +29,16 @@ def update_segments():
 
     # Search for segments
     segments = strava_api.search_segments(lat_min, lon_min, lat_max, lon_max, access_token)
+    
+    #decode polyline to coordinates
+    segments = segments['segments']
+    for segment in segments:
+        encoded_polyline = segment['points']
+        decoded_points = polyline.decode(encoded_polyline)
+        segment['points'] = decoded_points
+
     #return the segment results to page
-    return jsonify(segments['segments'])
+    return jsonify(segments)
 
 if __name__ == '__main__':
     app.run(debug=True)
