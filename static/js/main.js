@@ -62,11 +62,30 @@ function handleResponse(segments) {
         // Clear any existing content in the container before appending new segments
         segmentsContainer.innerHTML = "";
 
+        // Clear any existing segment polylines from the map
+        if (window.segmentLayers) {
+            window.segmentLayers.clearLayers();
+        } else {
+            window.segmentLayers = new L.FeatureGroup().addTo(map);
+        }
+
         // Loop through each segment and create a paragraph for each
         segments.forEach(segment => {
             let segmentText = document.createElement('p');
-            segmentText.innerHTML = `<strong>${segment.name}</strong>: ${segment.distance} meters ${segment.points}`;
+            segmentText.innerHTML = `<strong>${segment.name}</strong>: ${segment.distance} meters`;
             segmentsContainer.appendChild(segmentText);
+
+            // Draw the segment on the map
+            if (segment.points && segment.points.length > 0) {
+                const polyline = L.polyline(segment.points, {
+                    color: '#ff7800',
+                    weight: 3,
+                    opacity: 0.7
+                }).addTo(window.segmentLayers);
+
+                // Add popup with segment info
+                polyline.bindPopup(`<strong>${segment.name}</strong><br>Distance: ${segment.distance} meters`);
+            }
         });
 
         // If no segments are found, display a message
