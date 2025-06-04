@@ -40,9 +40,14 @@ def search_segments(lat_min, lon_min, lat_max, lon_max, access_token):
     response.raise_for_status()
     return response.json()
 
-def calculate_deviation(path_nodes):
+def calculate_deviation(path_nodes, points, graph):
     """
     Calculate the total deviation for each potential path.
+    
+    Args:
+        path_nodes: List of node IDs in the path
+        points: List of (lat, lon) tuples from decoded points
+        graph: OSMnx graph object
     """
     total_deviation = 0
     for i in range(len(points)-1):
@@ -117,7 +122,7 @@ def find_best_path_nodes(graph, points, max_deviation=50):
     
     # Start with the nearest nodes path
     best_path = nodes
-    best_deviation = calculate_deviation(best_path)
+    best_deviation = calculate_deviation(best_path, points, graph)
     
     # Try to improve the path by removing nodes that don't help
     improved = True
@@ -126,7 +131,7 @@ def find_best_path_nodes(graph, points, max_deviation=50):
         for i in range(1, len(best_path)-1):
             # Try removing this node
             test_path = best_path[:i] + best_path[i+1:]
-            test_deviation = calculate_deviation(test_path)
+            test_deviation = calculate_deviation(test_path, points, graph)
             
             if test_deviation < best_deviation:
                 best_path = test_path
