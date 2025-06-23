@@ -28,4 +28,35 @@ body, html {
     margin-top: 10px;  /* Add some spacing */
 }
 
+#path-info {
+    margin-top: 15px;
+}
+
+#segment-legend {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+#legend-items {
+    margin-top: 8px;
+}
+
+#legend-items div {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+#path-details {
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+#returned-segments p {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
 

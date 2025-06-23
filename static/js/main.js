@@ -58,9 +58,13 @@ async function sendPostRequest(data) {
 function handleResponse(segments) {
     try {
         let segmentsContainer = document.getElementById('returned-segments');
+        let pathDetailsContainer = document.getElementById('path-details');
+        let legendContainer = document.getElementById('legend-items');
 
-        // Clear any existing content in the container before appending new segments
+        // Clear any existing content in the containers
         segmentsContainer.innerHTML = "";
+        pathDetailsContainer.innerHTML = "";
+        legendContainer.innerHTML = "";
 
         // Clear any existing segment polylines from the map
         if (window.segmentLayers) {
@@ -69,16 +73,36 @@ function handleResponse(segments) {
             window.segmentLayers = new L.FeatureGroup().addTo(map);
         }
 
+        // Store segments globally for path finding
+        window.currentSegments = segments;
+
+        // Define colors for segments
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'];
+
         // Loop through each segment and create a paragraph for each
-        segments.forEach(segment => {
+        segments.forEach((segment, index) => {
+            const color = colors[index % colors.length];
+            
             let segmentText = document.createElement('p');
-            segmentText.innerHTML = `<strong>${segment.name}</strong>: ${segment.distance} meters`;
+            segmentText.style.marginBottom = '8px';
+            segmentText.style.display = 'flex';
+            segmentText.style.alignItems = 'center';
+            segmentText.innerHTML = `
+                <div style="
+                    width: 20px; 
+                    height: 8px; 
+                    background-color: ${color}; 
+                    margin-right: 8px;
+                    border-radius: 2px;
+                "></div>
+                <span><strong>${segment.name}</strong>: ${segment.distance} meters</span>
+            `;
             segmentsContainer.appendChild(segmentText);
 
             // Draw the segment on the map
             if (segment.points && segment.points.length > 0) {
                 const polyline = L.polyline(segment.points, {
-                    color: '#ff7800',
+                    color: color,
                     weight: 3,
                     opacity: 0.7
                 }).addTo(window.segmentLayers);
@@ -93,8 +117,99 @@ function handleResponse(segments) {
             segmentsContainer.innerHTML = "No segments found.";
         }
 
+        // Automatically find and display the best path through all segments
+        findBestPath();
+
     } catch (error) {
         console.error("Error handling response:", error);
+    }
+}
+
+// Function to find the best path through all segments
+async function findBestPath() {
+    if (!window.currentSegments) return;
+
+    // Get the current bounding box from the UI
+    const swText = document.getElementById('sw-coords').innerText.split(',');
+    const neText = document.getElementById('ne-coords').innerText.split(',');
+    if (swText.length < 2 || neText.length < 2) return;
+    const sw = { lat: parseFloat(swText[0]), lng: parseFloat(swText[1]) };
+    const ne = { lat: parseFloat(neText[0]), lng: parseFloat(neText[1]) };
+
+    try {
+        const response = await fetch('/best-path', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                southwest: sw,
+                northeast: ne,
+                segments: window.currentSegments
+            })
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const result = await response.json();
+
+        // Clear existing path layers
+        if (window.pathLayer) {
+            window.pathLayer.clearLayers();
+        } else {
+            window.pathLayer = new L.FeatureGroup().addTo(map);
+        }
+
+        // Draw each segment in its assigned color
+        if (result.segments && result.path) {
+            result.segments.forEach(segment => {
+                const segmentPath = result.path.slice(segment.start_idx, segment.end_idx + 1);
+                if (segmentPath.length > 1) {
+                    const polyline = L.polyline(segmentPath, {
+                        color: segment.color,
+                        weight: 6,
+                        opacity: 0.9
+                    }).addTo(window.pathLayer);
+
+                    // Add popup with segment info
+                    polyline.bindPopup(`<strong>${segment.name}</strong><br>Order: ${segment.order}<br>Color: ${segment.color}`);
+                }
+            });
+        }
+
+        // Update path information
+        let pathDetailsContainer = document.getElementById('path-details');
+        let legendContainer = document.getElementById('legend-items');
+        
+        pathDetailsContainer.innerHTML = `
+            <p><strong>Total Distance:</strong> ${(result.total_distance || 0).toFixed(0)} meters</p>
+            <p><strong>Segments Covered:</strong> ${result.segments_covered}</p>
+        `;
+
+        // Create legend
+        legendContainer.innerHTML = '';
+        if (result.segments) {
+            result.segments.forEach(segment => {
+                const legendItem = document.createElement('div');
+                legendItem.style.marginBottom = '8px';
+                legendItem.style.display = 'flex';
+                legendItem.style.alignItems = 'center';
+                legendItem.innerHTML = `
+                    <div style="
+                        width: 20px; 
+                        height: 8px; 
+                        background-color: ${segment.color}; 
+                        margin-right: 8px;
+                        border-radius: 2px;
+                    "></div>
+                    <span><strong>${segment.order}.</strong> ${segment.name}</span>
+                `;
+                legendContainer.appendChild(legendItem);
+            });
+        }
+
+    } catch (error) {
+        console.error("Error finding best path:", error);
+        let pathDetailsContainer = document.getElementById('path-details');
+        pathDetailsContainer.innerHTML = `<p>Error finding best path: ${error.message}</p>`;
     }
 }
 
